@@ -1,0 +1,17 @@
+{
+  "dependencies": {
+    "adm-zip": "^0.5.17",
+    "archiver": "^7.0.1",
+    "better-sqlite3": "^12.9.0",
+    "dotenv": "^17.4.2",
+    "exceljs": "^4.4.0",
+    "inquirer": "^8.2.4",
+    "luxon": "^3.7.2",
+    "pg": "^8.20.0",
+    "playwright": "^1.59.1",
+    "playwright-extra": "^4.3.6",
+    "puppeteer-extra-plugin-stealth": "^2.11.2",
+    "sqlite3": "^6.0.1",
+    "xlsx": "^0.18.5"
+  }
+}
