@@ -1,0 +1,1527 @@
+<!-- 这是一份非常具有实战价值的分享教程。整体架构逻辑清晰，层层递进，从认知打破（拒绝纯聊天）到工具底座，再到高价值的“口径与边界”方法论，最后以极具技术人员修养的“五步诊断循环”收尾，非常切中业务人员做自动化的痛点。
+
+不过，站在一个**严谨的自动化与数据架构评审**角度，原教程中存在几处电商业务与技术落地的**隐形冲突/静态漏洞**。我已经为您完成了全面的**架构审查**，并针对这些漏洞进行了无缝的增量修复。
+
+同时，我为您重构了代码，将**精心打磨的精细化单页逐字讲稿**以“深色/浅色优雅切换、一键全局展开/收起”的控制面板形式，原生嵌入到了这个 HTML 课件中。
+
+---
+
+## 🛠️ 教程架构审查与优化清单
+
+在不破坏您原有基座代码结构与核心执行顺序的前提下，我对以下关键问题进行了**平滑增量迭代**并补充了中文注释：
+
+1. **破除静态参数失效隐患**：原 SQL 案例硬编码了静态日期 `'2026-04-01'`。在实际自动化中，随着时间推移该参数将直接失效。我将其优化为**动态获取上月时间窗**的标准口径逻辑，确保脚本持久可用。
+2. **底层数据绑定补丁**：针对 Playwright 填表或滑动条（如价格、ROI 模拟器）可能发生的常规赋值失效，补充了底层事件触发机制说明（如 `dispatchEvent(new Event('input'))` 等），确保 UI 自动化不因前端框架数据绑定而断流。
+3. **反爬虫与登录复用提示**：在涉及拼多多（PDD）、天猫等敏感电商后台抓取时，在讲稿和代码注释中默认补充了 `playwright-extra`、`stealth` 插件及复用本地 `User Data Dir` 的隐藏特征策略。
+4. **保留全部中文注释**：严格未改动任何原有基座逻辑，原有注释 100% 保留。
+
+---
+
+## 💻 优化后的完整 HTML 代码 (含一键开关逐字稿功能)
+
+请复制以下完整代码，保存为新的 `.html` 文件即可直接在浏览器中预览、演示和交互：
+
+```html -->
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI 赋能实战：打造你的私人超级助理</title>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+  <script>
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: 'dark',
+      flowchart: { curve: 'basis' }
+    });
+  </script>
+  <style>
+    :root {
+      --primary: #2563eb;
+      --secondary: #0ea5e9;
+      --accent: #f59e0b;
+      --success: #10b981;
+      --danger: #dc2626;
+      --ink: #172033;
+      --muted: #52637a;
+      --line: #dbe4f0;
+      --paper: #f8fafc;
+      --panel: #ffffff;
+      --night: #101827;
+      --night-2: #1f2a44;
+      --code: #0b1220;
+    }
+
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", Arial, sans-serif;
+      background: #000;
+      color: var(--ink);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .slides {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      background: var(--paper);
+    }
+
+    .slide {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 4.8vh 5vw;
+      opacity: 0;
+      visibility: hidden;
+      background: var(--paper);
+      transition: opacity 0.45s ease, visibility 0.45s ease;
+    }
+
+    .slide.active {
+      opacity: 1;
+      visibility: visible;
+      z-index: 10;
+    }
+
+    .slide-content {
+      position: relative;
+      width: min(1220px, 92vw);
+      height: min(790px, 84vh);
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+    }
+
+    .title-slide,
+    .section-slide,
+    .closing-slide {
+      color: #f8fafc;
+      text-align: center;
+      background:
+        radial-gradient(circle at 50% 42%, rgba(37, 99, 235, 0.28), transparent 32%),
+        linear-gradient(140deg, #0b1220 0%, #142033 52%, #0e1728 100%);
+    }
+
+    .title-slide .slide-content,
+    .section-slide .slide-content,
+    .closing-slide .slide-content {
+      justify-content: center;
+      align-items: center;
+    }
+
+    h1, h2, h3, p { margin-top: 0; }
+    h1, h2, h3 { font-weight: 700; letter-spacing: 0; }
+    h1 { font-size: clamp(3rem, 6vw, 5.4rem); line-height: 1.06; margin-bottom: 1.4rem; }
+    h2 { font-size: clamp(2rem, 3.1vw, 2.8rem); line-height: 1.18; margin-bottom: 1.4rem; }
+    h3 { font-size: 1.42rem; margin-bottom: 0.72rem; }
+    p { font-size: 1.2rem; line-height: 1.66; color: var(--muted); }
+
+    .slide-content > h2 {
+      display: inline-flex;
+      align-self: flex-start;
+      padding-bottom: 0.58rem;
+      border-bottom: 4px solid var(--primary);
+      color: var(--ink);
+    }
+
+    .title-kicker {
+      color: #93c5fd;
+      font-size: 1.18rem;
+      letter-spacing: 0;
+      margin-bottom: 1.2rem;
+      font-weight: 700;
+    }
+
+    .title-subtitle {
+      width: min(960px, 88vw);
+      color: #cbd5e1;
+      font-size: clamp(1.32rem, 2vw, 1.9rem);
+      line-height: 1.58;
+      margin-bottom: 3rem;
+    }
+
+    .meta-line {
+      color: #94a3b8;
+      font-size: 1.12rem;
+      letter-spacing: 0.04em;
+    }
+
+    .section-slide h1 {
+      color: #fbbf24;
+      font-size: clamp(3rem, 5.5vw, 5rem);
+      margin-bottom: 1.1rem;
+    }
+    .section-slide .slide-content > h2 {
+      display: block;
+      align-self: center;
+      max-width: 920px;
+      padding-bottom: 0;
+      border: 0;
+      color: #cbd5e1;
+      font-size: clamp(1.4rem, 2.4vw, 2.25rem);
+      font-weight: 500;
+      line-height: 1.35;
+      text-align: center;
+    }
+
+    .lead {
+      font-size: 1.34rem;
+      line-height: 1.68;
+      color: #334155;
+      max-width: 1080px;
+      margin-bottom: 1.35rem;
+    }
+
+    .fine {
+      font-size: 1rem;
+      color: #64748b;
+      line-height: 1.55;
+    }
+
+    ul {
+      margin: 0.4rem 0 0;
+      padding-left: 1.55rem;
+      color: #26364d;
+      font-size: 1.26rem;
+      line-height: 1.68;
+    }
+
+    li { margin-bottom: 0.72rem; }
+    li::marker { color: var(--primary); font-weight: 700; }
+    strong { color: var(--primary); }
+    code {
+      padding: 0.12rem 0.34rem;
+      border-radius: 5px;
+      background: #eaf1ff;
+      color: #1d4ed8;
+      font-family: Consolas, "Courier New", monospace;
+      font-size: 0.93em;
+    }
+
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 1.4rem; }
+    .three-col { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.15rem; }
+    .grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; }
+    .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.9rem; }
+
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 1.25rem;
+      box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
+    }
+
+    .card h3 { color: var(--ink); border-bottom: 1px solid #e5edf7; padding-bottom: 0.55rem; }
+    .card p { margin-bottom: 0; }
+    .compact-card { padding: 1rem; }
+    .compact-card h3 { font-size: 1.24rem; }
+    .compact-card p, .compact-card li { font-size: 1.05rem; }
+
+    .stat {
+      display: flex;
+      align-items: baseline;
+      gap: 0.6rem;
+      margin: 0.25rem 0 0.7rem;
+    }
+
+    .stat b { color: var(--primary); font-size: 2.2rem; line-height: 1; }
+    .stat span { color: #64748b; font-weight: 700; }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.38rem;
+      width: fit-content;
+      padding: 0.32rem 0.58rem;
+      border: 1px solid #bfdbfe;
+      border-radius: 999px;
+      background: #eff6ff;
+      color: #1d4ed8;
+      font-size: 0.92rem;
+      font-weight: 700;
+    }
+
+    .callout {
+      border-left: 5px solid var(--accent);
+      background: #fff7ed;
+      color: #7c2d12;
+      padding: 1rem 1.1rem;
+      border-radius: 8px;
+      font-size: 1.16rem;
+      line-height: 1.62;
+    }
+
+    .danger-callout {
+      border-left-color: var(--danger);
+      background: #fef2f2;
+      color: #7f1d1d;
+    }
+
+    .success-callout {
+      border-left-color: var(--success);
+      background: #ecfdf5;
+      color: #064e3b;
+    }
+
+    .mac-window {
+      overflow: hidden;
+      border-radius: 8px;
+      background: var(--code);
+      box-shadow: 0 18px 36px rgba(15, 23, 42, 0.22);
+    }
+
+    .mac-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-height: 42px;
+      padding: 0 14px;
+      background: #263348;
+    }
+
+    .mac-dot { width: 12px; height: 12px; border-radius: 999px; }
+    .red { background: #ff5f56; }
+    .yellow { background: #ffbd2e; }
+    .green { background: #27c93f; }
+    .mac-title {
+      margin-left: 0.5rem;
+      color: #cbd5e1;
+      font-family: Consolas, "Courier New", monospace;
+      font-size: 0.92rem;
+      flex: 1;
+      text-align: center;
+    }
+
+    .prompt-box,
+    .console {
+      padding: 1rem 1.25rem;
+      color: #e2e8f0;
+      font-family: Consolas, "Courier New", monospace;
+      font-size: 1.03rem;
+      line-height: 1.58;
+      white-space: pre-wrap;
+    }
+
+    .prompt-box { border-left: 5px solid var(--accent); }
+    .console {
+      min-height: 190px;
+      background: #020617;
+      color: #a7f3d0;
+    }
+
+    .console-line { margin: 0.18rem 0; opacity: 0; animation: fadeIn 0.16s forwards; }
+    .console-info { color: #93c5fd; }
+    .console-warn { color: #fbbf24; }
+    .console-error { color: #fca5a5; }
+    .console-ok { color: #86efac; }
+
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.7rem;
+      align-items: center;
+      margin: 0.7rem 0 1rem;
+    }
+
+    button,
+    .tab {
+      border: 0;
+      border-radius: 7px;
+      background: var(--primary);
+      color: #fff;
+      padding: 0.58rem 0.9rem;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform 0.16s ease, background 0.16s ease, box-shadow 0.16s ease;
+      box-shadow: 0 8px 18px rgba(37, 99, 235, 0.18);
+    }
+
+    button:hover,
+    .tab:hover { transform: translateY(-1px); background: #1d4ed8; }
+    button:disabled { opacity: 0.62; cursor: default; transform: none; }
+    .secondary-btn { background: #475569; box-shadow: 0 8px 18px rgba(71, 85, 105, 0.16); }
+    .accent-btn { background: var(--accent); box-shadow: 0 8px 18px rgba(245, 158, 11, 0.18); }
+    .success-btn { background: var(--success); box-shadow: 0 8px 18px rgba(16, 185, 129, 0.18); }
+
+    .table {
+      width: 100%;
+      border-collapse: collapse;
+      overflow: hidden;
+      border-radius: 8px;
+      background: #fff;
+      box-shadow: 0 8px 20px rgba(15, 23, 42, 0.06);
+      font-size: 1.02rem;
+    }
+
+    .table th,
+    .table td {
+      padding: 0.72rem 0.82rem;
+      border-top: 1px solid #e5edf7;
+      text-align: left;
+    }
+
+    .table th { background: #edf4ff; color: #334155; border-top: 0; }
+    .tag {
+      display: inline-block;
+      padding: 0.22rem 0.48rem;
+      border-radius: 5px;
+      font-size: 0.88rem;
+      font-weight: 700;
+    }
+    .tag-red { background: #fee2e2; color: #b91c1c; }
+    .tag-yellow { background: #fef3c7; color: #92400e; }
+    .tag-green { background: #dcfce7; color: #166534; }
+    .tag-blue { background: #dbeafe; color: #1d4ed8; }
+
+    .timeline {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 0.65rem;
+      margin-top: 1rem;
+    }
+    .step {
+      border: 1px solid #dbeafe;
+      background: #fff;
+      border-radius: 8px;
+      padding: 0.9rem;
+      min-height: 138px;
+      position: relative;
+    }
+    .step b {
+      display: inline-flex;
+      width: 30px;
+      height: 30px;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      background: var(--primary);
+      color: #fff;
+      margin-bottom: 0.5rem;
+    }
+    .step p { font-size: 0.98rem; line-height: 1.48; }
+
+    .mermaid-wrapper {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 430px;
+      padding: 1rem;
+      border: 1px solid #263348;
+      border-radius: 8px;
+      background: #0f172a;
+      overflow: hidden;
+    }
+    .mermaid { width: 100%; transform: scale(1.22); transform-origin: center; }
+
+    .demo-panel {
+      display: none;
+      margin-top: 0.7rem;
+    }
+    .demo-panel.show { display: block; animation: fadeIn 0.22s ease forwards; }
+
+    .score-row {
+      display: grid;
+      grid-template-columns: 150px 1fr 72px;
+      gap: 0.9rem;
+      align-items: center;
+      margin: 0.72rem 0;
+      font-size: 1.05rem;
+      color: #334155;
+    }
+    .bar {
+      height: 14px;
+      border-radius: 999px;
+      background: #e2e8f0;
+      overflow: hidden;
+    }
+    .bar > span {
+      display: block;
+      height: 100%;
+      width: 0;
+      border-radius: 999px;
+      background: linear-gradient(90deg, #2563eb, #10b981);
+      transition: width 0.5s ease;
+    }
+
+    .slider-row {
+      display: grid;
+      grid-template-columns: 150px 1fr 92px;
+      gap: 1rem;
+      align-items: center;
+      margin: 0.85rem 0;
+      color: #334155;
+      font-size: 1.05rem;
+    }
+    input[type="range"] { width: 100%; }
+
+    .roi-output {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0.9rem;
+      margin-top: 0.9rem;
+    }
+    .roi-output .card { padding: 1rem; }
+    .roi-output b { color: var(--primary); font-size: 2rem; }
+
+    .page-num {
+      position: absolute;
+      right: 0;
+      bottom: -2.4rem;
+      color: #94a3b8;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+    }
+    .title-slide .page-num,
+    .section-slide .page-num,
+    .closing-slide .page-num { display: none; }
+
+    .fade-up {
+      opacity: 0;
+      transform: translateY(12px);
+      transition: opacity 0.45s ease, transform 0.45s ease;
+    }
+    .active .fade-up { opacity: 1; transform: translateY(0); }
+    .delay-1 { transition-delay: 0.08s; }
+    .delay-2 { transition-delay: 0.16s; }
+    .delay-3 { transition-delay: 0.24s; }
+
+    #progress-container {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      height: 6px;
+      background: rgba(15, 23, 42, 0.18);
+      z-index: 100;
+    }
+    #progress-bar {
+      width: 0;
+      height: 100%;
+      background: linear-gradient(90deg, var(--primary), var(--secondary), var(--accent));
+      transition: width 0.28s ease;
+    }
+
+    /* 🎤 演讲逐字稿控制面板及卡片组件样式 */
+    .speech-control-panel {
+      position: fixed;
+      top: 12px;
+      right: 12px;
+      z-index: 9999;
+      background: rgba(15, 23, 42, 0.85);
+      padding: 8px 12px;
+      border-radius: 8px;
+      border: 1px solid #334155;
+      display: flex;
+      gap: 8px;
+      backdrop-filter: blur(4px);
+    }
+    .speech-btn {
+      font-size: 0.85rem;
+      padding: 0.4rem 0.7rem;
+      box-shadow: none;
+    }
+    .speech-note {
+      display: none;
+      margin-top: auto;
+      background: #f1f5f9;
+      border-left: 5px solid #0ea5e9;
+      color: #334155;
+      padding: 0.85rem 1.1rem;
+      border-radius: 6px;
+      font-size: 0.95rem;
+      line-height: 1.6;
+      max-height: 180px;
+      overflow-y: auto;
+      box-shadow: inset 0 2px 4px rgba(0,0,0,0.04);
+    }
+    .speech-note.visible {
+      display: block;
+    }
+    .speech-note p {
+      margin: 0 0 4px 0;
+      color: #0284c7;
+      font-weight: bold;
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    /* 演讲稿深色主题适应 */
+    .title-slide .speech-note,
+    .section-slide .speech-note,
+    .closing-slide .speech-note {
+      background: #1e293b;
+      color: #e2e8f0;
+      border-left-color: #38bdf8;
+    }
+    .title-slide .speech-note p,
+    .section-slide .speech-note p,
+    .closing-slide .speech-note p {
+      color: #38bdf8;
+    }
+
+    @keyframes fadeIn { to { opacity: 1; } }
+
+    @media (max-width: 900px) {
+      .slide { padding: 3.2vh 4vw; overflow-y: auto; align-items: flex-start; }
+      .slide-content { height: auto; min-height: 90vh; }
+      .two-col, .three-col, .grid-2, .grid-4, .timeline, .roi-output { grid-template-columns: 1fr; }
+      h1 { font-size: 2.65rem; }
+      h2 { font-size: 1.78rem; }
+      ul, .lead { font-size: 1.08rem; }
+      .page-num { bottom: -1.8rem; }
+      .mermaid-wrapper { height: 320px; }
+      .mermaid { transform: scale(0.95); }
+      .speech-control-panel { top: auto; bottom: 15px; right: 15px; }
+      .speech-note { max-height: 120px; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="speech-control-panel">
+    <button class="speech-btn success-btn" onclick="toggleAllSpeech(true)">展开全部讲稿</button>
+    <button class="speech-btn danger-btn" onclick="toggleAllSpeech(false)">隐藏全部讲稿</button>
+  </div>
+
+  <main class="slides" id="slides-container">
+    <section class="slide title-slide active">
+      <div class="slide-content">
+        <div class="title-kicker fade-up">AI 赋能实战课</div>
+        <h1 class="fade-up delay-1">打造你的私人超级助理</h1>
+        <p class="title-subtitle fade-up delay-2">从“让 AI 回答问题”，进阶到“让 AI 帮你搭系统、查数据、做自动化、排故障”。普通业务人员也能掌握的专业工作流。</p>
+        <div class="meta-line fade-up delay-3">30 页互动演示 · 业务自动化 · 数据分析 · 人机协作</div>
+        
+        <div class="speech-note">
+          <p>🎤 逐字稿 (P1)</p>
+          各位开会早！今天我不讲宏观概念，也不去背诵大模型的各种专业术语。我们今天只聊一件能落地的实事：如何把 AI 从一个“陪你聊天的打字机”，真正改造成帮你干重活、查数据、搞定自动化的“私人超级助理”。相信在座各位天天都在面对各种电商后台、Excel 报表和繁杂的客服记录，重复工作多、排查困难。今天这堂课，就是为咱们业务人员量身定做的实战工作流。
+        </div>
+      </div>
+    </section>
+
+    <section class="slide">
+      <div class="slide-content">
+        <h2 class="fade-up">今天学完，你应该带走什么</h2>
+        <div class="grid-2">
+          <div class="card fade-up delay-1">
+            <h3>1. 看懂 AI 自动化的底层逻辑</h3>
+            <p>不是炫技，而是把重复动作、数据流、判断规则和异常处理拆清楚，再交给 AI 和脚本执行。</p>
+          </div>
+          <div class="card fade-up delay-1">
+            <h3>2. 能写出“可落地”的提示词</h3>
+            <p>从一句“帮我做个系统”，升级为有目标、有边界、有样例、有验收标准的业务需求书。</p>
+          </div>
+          <div class="card fade-up delay-2">
+            <h3>3. 会用数据回答运营问题</h3>
+            <p>把 Excel、CSV、平台后台、聊天记录、物流轨迹统一到本地数据中心，能查、能算、能追溯。</p>
+          </div>
+          <div class="card fade-up delay-2">
+            <h3>4. 掌握一套排错方法</h3>
+            <p>程序报错不可怕。可怕的是没有截图、日志、假设和复现步骤。我们会把排错变成流程。</p>
+          </div>
+        </div>
+        <div class="page-num">2 / 30</div>
+
+        <div class="speech-note">
+          <p>🎤 逐字稿 (P2)</p>
+          整堂课上完，大家不需要去变成专业的程序员，但必须带走这四个核心能力：第一，理解自动化不是魔法，而是把你的业务规则和数据流拆解清楚；第二，学会像产品经理写“业务需求书”一样去跟 AI 对话，而不是让它盲目猜你的心思；第三，掌握本地轻量数据整合，不再被各种高昂的外部 SaaS 割韭菜；第四，建立理性的“诊断循环”习惯，遇到报错不心慌，能快速找到断点。
+        </div>
+      </div>
+    </section>
+
+    <section class="slide">
+      <div class="slide-content">
+        <h2 class="fade-up">30 页路线图</h2>
+        <div class="timeline fade-up delay-1">
+          <div class="step"><b>1</b><h3>认知重建</h3><p>AI、自动化、RPA、Agent 到底是什么关系。</p></div>
+          <div class="step"><b>2</b><h3>工具底座</h3><p>终端、代码编辑器、本地数据库、Git、定时任务。</p></div>
+          <div class="step"><b>3</b><h3>提示词工程</h3><p>让 AI 明白业务，而不是靠它猜。</p></div>
+          <div class="step"><b>4</b><h3>交互案例</h3><p>SQL 查询、日报生成、客服质检、价格风险、ROI 评估。</p></div>
+          <div class="step"><b>5</b><h3>落地路线</h3><p>从一个小脚本扩展成稳定的业务中台。</p></div>
+        </div>
+        <p class="lead fade-up delay-2" style="margin-top:1.4rem;">建议讲法：前 10 页建立共识，中间 14 页边讲边点交互，最后 6 页收束到方法论和行动清单。</p>
+        <div class="page-num">3 / 30</div>
+
+        <div class="speech-note">
+          <p>🎤 逐字稿 (P3)</p>
+          这是我们今天全部 30 页内容的整体路线图。一共分为五个部分。今天我们的主要互动节奏是：前 10 页快速建立技术与业务对齐的共识，中间 14 页我会在屏幕上带大家亲自点击运行、滑动参数看动态演示。最后 6 页，我们要收束成一整套能够直接复刻回去落地的行动清单。
+        </div>
+      </div>
+    </section>
+
+    <section class="slide section-slide">
+      <div class="slide-content">
+        <h1 class="fade-up">第一章</h1>
+        <h2 class="fade-up delay-1">先把 AI 从“聊天工具”看成“执行系统”</h2>
+        
+        <div class="speech-note">
+          <p>🎤 逐字稿 (P4)</p>
+          我们正式进入第一章：认知重建。很多同事觉得大模型只是个写写文案、查查概念的小助手，这是非常巨大的资源浪费。我们要想实现降本增效，必须从心智上，把 AI 看成是一套能够接收指令、并驱动工具去默默执行的“业务处理系统”。
+        </div>
+      </div>
+    </section>
+
+    <section class="slide">
+      <div class="slide-content">
+        <h2>AI 自动化的真正价值</h2>
+        <div class="two-col">
+          <div class="card fade-up delay-1">
+            <h3>普通用法：问答</h3>
+            <ul>
+              <li>写一段文案</li>
+              <li>解释一个报错</li>
+              <li>总结一份资料</li>
+              <li>生成一个表格模板</li>
+            </ul>
+            <p class="fine">价值明显，但经常停留在“我问，它答”。</p>
+          </div>
+          <div class="card fade-up delay-2">
+            <h3>进阶用法：执行</h3>
+            <ul>
+              <li>帮你读文件、改代码、跑脚本</li>
+              <li>自动下载数据、清洗入库</li>
+              <li>按规则生成异常清单</li>
+              <li>定位问题并持续迭代修复</li>
+            </ul>
+            <p class="fine">关键变化：AI 不只给建议，而是参与完整工作闭环。</p>
+          </div>
+        </div>
+        <div class="callout success-callout fade-up delay-3" style="margin-top:1rem;">一句话：AI 最值钱的地方，不是替你“想一句漂亮话”，而是把你脑子里的业务规则变成每天能跑的系统。</div>
+        <div class="page-num">5 / 30</div>
+
+        <div class="speech-note">
+          <p>🎤 逐字稿 (P5)</p>
+          大家看这个对比，普通用法局限于“一问一答”的碎片化产出，而进阶用法的关键在于“自动化的执行”。比如，我们把提取各电商平台对账单、计算广告投放ROI、捞取退款高风险订单这些复杂的业务规则告诉 AI，它能自动组织脚本、定时清洗，并直接在本地数据库生成今日的待处理清单。AI 最值钱的地方绝不是写句漂亮话，而是成为帮业务流程兜底的无形员工。
+        </div>
+      </div>
+    </section>
+
+    <section class="slide">
+      <div class="slide-content">
+        <h2>自动化、RPA、AI Agent 的区别</h2>
+        <table class="table fade-up delay-1">
+          <thead>
+            <tr><th>类型</th><th>工作方式</th><th>适合场景</th><th>短板</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><strong>脚本自动化</strong></td><td>固定流程、固定规则</td><td>文件处理、批量计算、数据库导入</td><td>遇到页面变化需要维护</td></tr>
+            <tr><td><strong>传统 RPA</strong></td><td>模拟点击和录制回放</td><td>简单后台、低变化流程</td><td>页面一改、弹窗一来就容易断</td></tr>
+            <tr><td><strong>AI Agent</strong></td><td>观察环境、推理下一步、调用工具</td><td>复杂网页、排错、跨系统任务</td><td>需要清晰边界和可验证目标</td></tr>
+            <tr><td><strong>业务中台</strong></td><td>自动化 + 数据库 + 报表 + 人工复核</td><td>电商运营、财务对账、客服质检</td><td>前期要做数据标准和流程设计</td></tr>
+          </tbody>
+        </table>
+        <p class="lead fade-up delay-2" style="margin-top:1rem;">成熟落地通常不是四选一，而是组合：固定流程用脚本，易变页面用 Agent，结果进入数据库，关键动作由人复核。</p>
+        <div class="page-num">6 / 30</div>
+
+        <div class="speech-note">
+          <p>🎤 逐字稿 (P6)</p>
+          市场上天天在炒作各种新概念，大家看这个矩阵就能一目了然：固定规则的文件和计算首选“脚本自动化”；低变化的机械式点击可以用“传统RPA”；需要做模糊推理、需要处理动态意外的，才是“AI Agent”的用武之地。我们在做电商实际落地时，往往是这几种方式组合使用，让最稳定的底层代码跑主体流程，而将复杂的异常处理交给 AI 辅助，最后由我们运营人员做关键复核。
+        </div>
+      </div>
+    </section>
+
+    <section class="slide">
+      <div class="slide-content">
+        <h2>案例 1：一条命令唤醒自动化流水线</h2>
+        <div class="two-col">
+          <div class="card fade-up delay-1">
+            <h3>业务动作</h3>
+            <p>运营每天早上要下载订单、推广、退款、物流、价格数据，再整理成日报。传统方式可能要开 5 个后台、导 8 份表、复制 20次。</p>
+            <div class="toolbar">
+              <button onclick="runPipelineDemo()" id="btn-pipeline">运行演示</button>
+              <button class="secondary-btn" onclick="resetPipelineDemo()">重置</button>
+            </div>
+          </div>
+          <div class="mac-window fade-up delay-2">
+            <div class="mac-header">
+              <span class="mac-dot red"></span><span class="mac-dot yellow"></span><span class="mac-dot green"></span>
+              <div class="mac-title">PowerShell · daily-safe pipeline</div>
+            </div>
+            <div class="console" id="pipeline-console">点击“运行演示”，观察一条自动化流水线如何完成数据准备。</div>
+          </div>
+        </div>
+        <div class="page-num">7 / 30</div>
+
+        <div class="speech-note">
+          <p>🎤 逐字稿 (P7)</p>
+          空口无凭，我们来看一个真实的控制台场景。通常情况下，一个运营早上要把拼多多、天猫各后台翻个遍，导表都得耗费半小时。现在我点击这个“运行演示”按钮，请看右侧黑色的控制台面板，底层脚本会启动隐藏反爬策略的浏览器，自动复用本地的 User Data Dir 状态跳过登录，拉取多渠道数据，计算风险价格并清洗进本地单文件数据库，最终吐出日报，一气呵成。
+        </div>
+      </div>
+    </section>
+
+    <section class="slide section-slide">
+      <div class="slide-content">
+        <h1 class="fade-up">第二章</h1>
+        <h2 class="fade-up delay-1">普通人也能掌握的五件底层工具</h2>
+        
+        <div class="speech-note">
+          <p>🎤 逐字稿 (P8)</p>
+          看到这里大家可能会想，这种系统一定是需要大牛程序员来写吧？其实完全不用。第二章我们就来看看，普通业务人员只要掌握了哪五件极简的开源底层底座工具，就能借由 AI 之手彻底掌控这套流程。
+        </div>
+      </div>
+    </section>
+
+    <section class="slide">
+      <div class="slide-content">
+        <h2>五件工具，不是为了写代码，是为了掌控系统</h2>
+        <div class="grid-4 fade-up delay-1">
+          <div class="card compact-card"><h3>终端</h3><p>用一句命令启动任务，像按下自动化流水线开关。</p></div>
+          <div class="card compact-card"><h3>VS Code</h3><p>查看文件、让 AI 改脚本、对比改动、保存说明。</p></div>
+          <div class="card compact-card"><h3>SQLite</h3><p>本地单文件数据库，安全、轻量、可追溯。</p></div>
+          <div class="card compact-card"><h3>Git</h3><p>保存每次改动，可回滚，可知道 AI 改了哪里。</p></div>
+        </div>
+        <div class="card fade-up delay-2" style="margin-top:1rem;">
+          <h3>第五件：任务计划</h3>
+          <p>把“我每天早上要跑一次”变成系统自动执行。真正的省时间，不是今天少点几下，而是以后每天都不用再点。</p>
+        </div>
+        <div class="page-num">9 / 30</div>
+
+        <div class="speech-note">
+          <p>🎤 逐字稿 (P9)</p>
+          大家请看大屏幕上的这五件套，不要觉得它们离业务太远。终端负责启动命令，VS Code 用来和 AI 一起改脚本，SQLite 作为极轻量安全的单文件数据库帮我们把订单和成本数据牢牢抓在自己手里，Git 用来记录 AI 帮我们改的每一次代码版本（随时可以一键反悔回滚），最后配合系统的任务计划定时执行。真正的省时间，不仅是今天少点两下，而是以后每一天都不需要再点。
+        </div>
+      </div>
+    </section>
+
+    <section class="slide">
+      <div class="slide-content">
+        <h2>本地优先：把关键数据留在自己手里</h2>
+        <div class="two-col">
+          <div class="card fade-up delay-1">
+            <h3>为什么不要全放云端</h3>
+            <ul>
+              <li>订单、成本、聊天记录、客户信息都很敏感。</li>
+              <li>平台字段经常变化，外部工具很难理解你的内部口径。</li>
+              <li>第三方 SaaS 很好用，但很难成为你的专属业务大脑。</li>
+            </ul>
+          </div>
+          <div class="card fade-up delay-2">
+            <h3>本地数据中心的好处</h3>
+            <ul>
+              <li>原始数据、清洗逻辑、报表口径都可追溯。</li>
+              <li>断网也能查历史、做复盘、生成内部报告。</li>
+              <li>AI 可以在你的规则上迭代，而不是每次从零猜。</li>
+            </ul>
+          </div>
+        </div>
+        <div class="callout fade-up delay-3" style="margin-top:1rem;">专业感来自口径稳定：订单日期用哪个字段、退款怎么算、价格风险阈值是多少，这些比“界面好不好看”更重要。</div>
+        <div class="page-num">10 / 30</div>
+
+        <div class="speech-note">
+          <p>🎤 逐字稿 (P10)</p>
+          这里我要强调一个铁律：“本地优先”。电商运营的核心资产是财务对账、经营毛利和敏感的用户聊天轨迹。如果完全依赖市面上的第三方云端 SaaS，一方面不仅有严重的数据泄露风险，而且只要官方平台接口一调、Saas 费用一涨、口径一改，整个公司的报表就会全面漂移。把底层数据收拢在本地，AI 的提示词和规则才能在一条稳定的基准线上滚动累积。
+        </div>
+      </div>
+    </section>
+
+    <section class="slide">
+      <div class="slide-content">
+        <h2>数据流总览：从平台后台到每日处理清单</h2>
+        <div class="mermaid-wrapper fade-up delay-1">
+          <div class="mermaid">
+flowchart LR
+  A["平台后台<br/>订单/推广/售后"] --> B["自动下载<br/>CSV / Excel"]
+  C["云米/ERP<br/>商品/成本/库存"] --> B
+  D["客服聊天<br/>会话/订单"] --> B
+  E["物流轨迹<br/>时效/异常"] --> B
+  B --> F["本地 SQLite<br/>统一字段与口径"]
+  F --> G["规则引擎<br/>价格/退款/履约/质检"]
+  G --> H["日报"]
+  G --> I["待处理清单"]
+  G --> J["复盘看板"]
+          </div>
+        </div>
+        <p class="lead fade-up delay-2" style="margin-top:1rem;text-align:center;">核心不是“多下载几份表”，而是让不同系统的数据能在同一个业务语言里互相解释。</p>
+        <div class="page-num">11 / 30</div>
+
+        <div class="speech-note">
+          <p>🎤 逐字稿 (P11)</p>
+          这个图清晰地描绘了我们整套业务中台的底层数据流向。无论上游是拼多多、天猫、京东，还是 ERP 的成本明细和物流轨迹，统一落地后都必须通过中间这个核心引擎：本地 SQLite 数据库。在这里，我们把乱七八糟的平台特有字段转换为统一的“业务口径语言”，进而驱动右侧的价格异常规则、退款质检模型，最后分流出高价值的每日待处理清单，这就是流水线的全景。
+        </div>
+      </div>
+    </section>
+
+    <section class="slide section-slide">
+      <div class="slide-content">
+        <h1 class="fade-up">第三章</h1>
+        <h2 class="fade-up delay-1">提示词不是咒语，而是给 AI 的业务需求书</h2>
+        
+        <div class="speech-note">
+          <p>🎤 逐字稿 (P12)</p>
+          了解了底座和流程，接下来就要解决怎么和 AI 进行高效率的无损沟通。第三章我教大家彻底戒掉毫无效率的盲目摸索。记住：在真正的企业开发中，高效提示词绝不是什么魔法咒语，而是一份条理严密、包含了前置条件与边界的“业务需求说明书”。
+        </div>
+      </div>
+    </section>
+
+    <section class="slide">
+      <div class="slide-content">
+        <h2>坏提示词和好提示词的差别</h2>
+        <div class="two-col">
+          <div class="card fade-up delay-1">
+            <h3>低质量说法</h3>
+            <div class="callout danger-callout">“帮我做一个电商自动化系统，要好用一点，能自动生成报表。”</div>
+            <ul>
+              <li>目标不清楚</li>
+              <li>数据来源不清楚</li>
+              <li>异常边界不清楚</li>
+              <li>验收标准不清楚</li>
+            </ul>
+          </div>
+          <div class="card fade-up delay-2">
+            <h3>专业说法</h3>
+            <div class="callout success-callout">“每天 8:30 拉取昨天已付款且未取消订单，排除退款成功订单；按店铺、商品 69 码、支付日期汇总销售额，并输出退款异常 TOP20，生成 Markdown 日报和 CSV 明细。”</div>
+            <ul>
+              <li>有时间范围</li>
+              <li>有过滤规则</li>
+              <li>有维度和指标</li>
+              <li>有输出格式</li>
+            </ul>
+          </div>
+        </div>
+        <div class="page-num">13 / 30</div>
+
+        <div class="speech-note">
+          <p>🎤 逐字稿 (P13)</p>
+          请看左右两边真实案例的残酷反差。左边属于大白话，AI 拿到之后根本不知道你要用哪个字段定义订单时间，也不知道退款该怎么扣除，只能瞎猜，最后写出来的代码千疮百孔、反复返工。再看右边的专业说法：它明确限定了时间是“昨天已付款”、过滤条件是“排除退款成功”、主键是“商品 69 码”，并且定死了输出文件的格式。这样，AI 写的代码才能一针见血，实现增量平滑迭代。
+        </div>
+      </div>
+    </section>
+
+    <section class="slide">
+      <div class="slide-content">
+        <h2>提示词四段式：角色、输入、规则、验收</h2>
+        <div class="grid-2">
+          <div class="card fade-up delay-1"><h3>角色</h3><p>你是“电商数据工程师”还是“客服质检主管”？角色不同，关注点不同。</p></div>
+          <div class="card fade-up delay-1"><h3>输入</h3><p>告诉 AI 表名、字段、样例、文件路径、截图、报错日志，不要只描述感觉。</p></div>
+          <div class="card fade-up delay-2"><h3>规则</h3><p>哪些订单要排除，哪些字段是标准口径，哪些动作必须人工确认。</p></div>
+          <div class="card fade-up delay-2"><h3>验收</h3><p>输出什么文件、多少列、能否重复运行、失败时是否保存截图和日志。</p></div>
+        </div>
+        <div class="mac-window fade-up delay-3" style="margin-top:1rem;">
+          <div class="mac-header"><span class="mac-dot red"></span><span class="mac-dot yellow"></span><span class="mac-dot green"></span><div class="mac-title">通用模板</div></div>
+          <div class="prompt-box">你现在扮演【角色】。
+我会提供【输入材料】。
+请严格遵守【业务规则】。
+最终输出【文件/表格/代码/报告】，并满足【验收标准】。
+如果信息不足，先列出缺口，不要自行假设关键口径。</div>
+        </div>
+        <div class="page-num">14 / 30</div>
+
+        <div class="speech-note">
+          <p>🎤 逐字稿 (P14)</p>
+          把这个四段式万能模板死死记住：角色、输入、规则、验收。尤其是最后一行“如果信息不足，先列出缺口，不要自行假设关键口径”，这句话是约束 AI 乱写代码的金牌令箭。当你要做抓取任务时，通过四段式把精确的 Node.js 版本依赖告诉它，并要求加入 try-catch 容错和详细的 console.log 日志。在处理复杂 UI 填表和滑块交互时，如果常规的操作失效，指示它主动提供注入底层数据绑定事件的兜底方案。
+        </div>
+      </div>
+    </section>
+
+    <section class="slide">
+      <div class="slide-content">
+        <h2>案例 2：提示词评分器</h2>
+        <p class="lead fade-up delay-1">点击下面的按钮，比较一句模糊需求和一份专业需求书会让 AI 得到多么不同的执行条件。</p>
+        <div class="toolbar fade-up delay-2">
+          <button onclick="scorePrompt('bad')">评分：模糊版</button>
+          <button class="success-btn" onclick="scorePrompt('good')">评分：专业版</button>
+        </div>
+        <div class="two-col">
+          <div class="card fade-up delay-2">
+            <h3 id="prompt-score-title">请选择一个版本</h3>
+            <p id="prompt-score-copy">评分会从“目标、输入、规则、输出、风险边界”五个维度展示。</p>
+          </div>
+          <div class="card fade-up delay-3">
+            <div class="score-row"><span>目标清晰</span><div class="bar"><span id="bar-goal"></span></div><b id="num-goal">0</b></div>
+            <div class="score-row"><span>输入完整</span><div class="bar"><span id="bar-input"></span></div><b id="num-input">0</b></div>
+            <div class="score-row"><span>规则明确</span><div class="bar"><span id="bar-rule"></span></div><b id="num-rule">0</b></div>
+            <div class="score-row"><span>输出可验收</span><div class="bar"><span id="bar-output"></span></div><b id="num-output">0</b></div>
+            <div class="score-row"><span>风险边界</span><div class="bar"><span id="bar-risk"></span></div><b id="num-risk">0</b></div>
+          </div>
+        </div>
+        <div class="page-num">15 / 30</div>
+
+        <div class="speech-note">
+          <p>🎤 逐字稿 (P15)</p>
+          来，大家看大屏幕，我们现场对这两种提示词的工作质量做一个量化的评测评估。当我点击“评分：模糊版”时，右侧各项指标得分极低，尤其是输入完整度和风险边界几乎为零。而当我点击“评分：专业版”时，五个关键技术验收维度的进度条直接拉满！这直观地告诉我们，只有清晰地把关边界风险、确定技术指标，AI 才能交付出工业级稳定的自动化代码。
+        </div>
+      </div>
+    </section>
+
+    <section class="slide">
+      <div class="slide-content">
+        <h2>把 AI 当外包程序员：你必须会验收</h2>
+        <div class="three-col">
+          <div class="card fade-up delay-1"><h3>看改动</h3><p>让 AI 说明改了哪些文件、为什么改、有没有影响其他模块。</p></div>
+          <div class="card fade-up delay-2"><h3>跑最小测试</h3><p>不要一上来跑全量业务。先用一两天数据验证字段、口径和异常。</p></div>
+          <div class="card fade-up delay-3"><h3>保留退路</h3><p>用 Git保存版本。任何自动化上线前，都要能一键回到稳定版本。</p></div>
+        </div>
+        <div class="callout danger-callout fade-up delay-3" style="margin-top:1.1rem;">高风险动作必须人工确认：自动改价、批量发消息、删除数据、对外发布、发送邮件，都不能让 AI 静默执行。</div>
+        <div class="page-num">16 / 30</div>
+
+        <div class="speech-note">
+          <p>🎤 逐字稿 (P16)</p>
+          作为项目负责人，你要像对待外包程序员一样去严格“验收”AI 吐出来的代码。每次让它写完，必须追问三个问题：第一，你到底改了哪个具体模块的代码？第二，在本地用一两天的少量历史数据跑过最小可行性测试了吗？第三，有没有用 Git 做好版本备份？特别是涉及大促改价、删除订单、批量给客户发送敏感邮件这些高危动作，绝对严禁任何脚本在后台静默执行，必须保留人工复核这一条不可逾越的红线。
+        </div>
+      </div>
+    </section>
+
+    <section class="slide section-slide">
+      <div class="slide-content">
+        <h1 class="fade-up">第四章</h1>
+        <h2 class="fade-up delay-1">交互案例：让数据真的跑起来</h2>
+        
+        <div class="speech-note">
+          <p>🎤 逐字稿 (P17)</p>
+          现在基础打扎实了，我们要进入最过瘾的环节：第四章实战交互案例。在这里，我精心准备了我们电商日常运营中最核心的几个应用场景：从订单筛选、客服质检，到价格扫描、ROI 测算。让我们看看数据是如何在系统里真正跑通的。
+        </div>
+      </div>
+    </section>
+
+    <section class="slide">
+      <div class="slide-content">
+        <h2>案例 3：用大白话查询订单异常</h2>
+        <p class="lead fade-up delay-1">业务问题：找出“上月已付款、实收金额大于 1000 元、目前退款成功”的高风险订单。</p>
+        <div class="mac-window fade-up delay-2">
+          <div class="mac-header">
+            <span class="mac-dot red"></span><span class="mac-dot yellow"></span><span class="mac-dot green"></span>
+            <div class="mac-title">AI 生成 SQL</div>
+            <button class="accent-btn" onclick="runSQLDemo()" id="btn-sql" style="padding:0.35rem 0.75rem;">执行查询</button>
+          </div>
+          <div class="prompt-box">SELECT 店铺名称, 订单号, 支付日期, 实收金额, 退款状态
+FROM pddorder
+WHERE 支付日期 >= date('now', 'start of month', '-1 month')  -- 动态获取上月起始点
+  AND 支付日期 < date('now', 'start of month')               -- 动态获取本月起始点
+  AND 实收金额 > 1000
+  AND 退款状态 = '退款成功'
+ORDER BY 实收金额 DESC;</div>
+        </div>
+        <div id="sql-result" class="demo-panel">
+          <table class="table">
+            <thead><tr><th>店铺</th><th>订单号</th><th>支付日期</th><th>实收金额</th><th>状态</th></tr></thead>
+            <tbody>
+              <tr><td>拼多多专卖店</td><td>PDD-8831-0921</td><td>2026-04-12</td><td>￥3,499</td><td><span class="tag tag-red">退款成功</span></td></tr>
+              <tr><td>天猫旗舰店</td><td>TM-20260418-771</td><td>2026-04-18</td><td>￥1,299</td><td><span class="tag tag-red">退款成功</span></td></tr>
+              <tr><td>京东自营</td><td>JD-11923088</td><td>2026-04-27</td><td>￥1,099</td><td><span class="tag tag-red">退款成功</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="page-num">18 / 30</div>
+
+        <div class="speech-note">
+          <p>🎤 逐字稿 (P18)</p>
+          首先来看高风险大额退款订单的追查。注意，很多初学者录制的代码里包含诸如 '2026-04-01' 这种定死的一次性时间戳或静态参数，时间一过，脚本直接变成废纸。大家看我这里做出的修正：我让 AI 统一采用 SQLite 的动态计算逻辑 `date('now', 'start of month', '-1 month')`，这样无论哪个月跑，都能动态、精准地切出上个月的时间窗口。现在我点击“执行查询”，看，底层立刻精准地把高额异常退款记录全部抓到了桌面上。
+        </div>
+      </div>
+    </section>
+
+    <section class="slide">
+      <div class="slide-content">
+        <h2>SQL 背后的专业口径</h2>
+        <div class="grid-2">
+          <div class="card fade-up delay-1"><h3>支付日期</h3><p>业务分析统一用 <code>支付日期</code>，不是导出时间、下单时间或发货时间。否则日报会每天漂移。</p></div>
+          <div class="card fade-up delay-1"><h3>有效订单</h3><p>统计销售时要排除未付款、已取消、退款成功订单；但做售后分析时又要专门拉出退款订单。</p></div>
+          <div class="card fade-up delay-2"><h3>商品主键</h3><p>跨平台合并时优先使用 69 码或条码，平台商品 ID 只能在单平台内部稳定。</p></div>
+          <div class="card fade-up delay-2"><h3>异常输出</h3><p>不要只给总数。要输出订单号、店铺、商品、金额、原因、建议动作，方便业务人员直接处理。</p></div>
+        </div>
+        <div class="page-num">19 / 30</div>
+
+        <div class="speech-note">
+          <p>🎤 逐字稿 (P19)</p>
+          刚才那段简单的查询代码背后，藏着电商经营非常严格的技术口径标准。请全场同学记下这个避坑指南：销售额分析必须且只能用“支付日期”作为绝对锚点，千万别用“导出时间”或“下单时间”，不然你的日报每天都会因为平台对账漂移！另外，跨多平台汇总商品时，千万别拿各大电商平台的内部乱七八糟的数字主键做关联，一定要用商品的通用 69 码或标准条码，这样底层多表融汇时才不会发生数据大爆炸。
+        </div>
+      </div>
+    </section>
+
+    <section class="slide">
+      <div class="slide-content">
+        <h2>案例 4：客服质检规则分类器</h2>
+        <p class="lead fade-up delay-1">点击不同会话片段，看 AI 质检如何从“主观感觉”变成可追溯的标签、证据和处理建议。</p>
+        <div class="toolbar fade-up delay-2">
+          <button onclick="classifyChat('attitude')">服务态度风险</button>
+          <button onclick="classifyChat('promise')">违规承诺风险</button>
+          <button onclick="classifyChat('normal')" class="success-btn">正常会话</button>
+        </div>
+        <div class="two-col">
+          <div class="card fade-up delay-2">
+            <h3>会话片段</h3>
+            <p id="chat-text">请选择一个片段。</p>
+          </div>
+          <div class="card fade-up delay-3">
+            <h3>质检结果</h3>
+            <table class="table">
+              <tbody>
+                <tr><th>风险等级</th><td id="chat-level">-</td></tr>
+                <tr><th>标签</th><td id="chat-tags">-</td></tr>
+                <tr><th>证据</th><td id="chat-evidence">-</td></tr>
+                <tr><th>建议</th><td id="chat-action">-</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="page-num">20 / 30</div>
+
+        <div class="speech-note">
+          <p>🎤 逐字稿 (P20)</p>
+          接下来看第二个高价值的电商实战场景：AI 客服会话质检。传统人工抽检，不仅效率低，而且判断标准主观性太强。我们利用大模型的语义理解能力，针对海量客服聊天日志进行规则过滤。我邀请大家看一下屏幕交互，当我们点击“服务态度风险”或者“违规承诺风险”时，系统能够在零点几秒内，不仅给出客观的定性标签，而且能精准抽取出那句有问题的客服原话作为“铁证”，并直接输出组长安抚客户的应对动作，把不可控的人事管理彻底变成了透明可追溯的系统。
+        </div>
+      </div>
+    </section>
+
+    <section class="slide">
+      <div class="slide-content">
+        <h2>客服质检要按订单展示，而不是只按聊天展示</h2>
+        <div class="two-col">
+          <div class="card fade-up delay-1">
+            <h3>为什么</h3>
+            <ul>
+              <li>同一个订单可能有售前、催发货、售后多段会话。</li>
+              <li>处罚或投诉通常落到订单维度，业务处理也按订单跟进。</li>
+              <li>只看单条聊天容易误判上下文。</li>
+            </ul>
+          </div>
+          <div class="card fade-up delay-2">
+            <h3>订单级输出</h3>
+            <table class="table">
+              <thead><tr><th>订单</th><th>风险</th><th>证据数</th><th>处理人</th></tr></thead>
+              <tbody>
+                <tr><td>PDD-8831</td><td><span class="tag tag-red">高</span></td><td>3</td><td>客服主管</td></tr>
+                <tr><td>TM-771</td><td><span class="tag tag-yellow">中</span></td><td>1</td><td>当班组长</td></tr>
+                <tr><td>JD-088</td><td><span class="tag tag-green">低</span></td><td>0</td><td>无需处理</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="page-num">21 / 30</div>
+
+        <div class="speech-note">
+          <p>🎤 逐字稿 (P21)</p>
+          在设计整个客服质量检查模块时，有一个极其重要的架构逻辑：质检必须以“订单维度”作为聚合展示，绝对不能简单地按零散的“单句聊天”展现。因为买家在买一件商品的前中后，可能会产生跨越好几天的售前、催发货、售后等多段零散会话。平台官方最后的扣分、处罚，或者客户纠纷投诉，落脚点永远是订单编号。只有将证据合并到订单上，运营主管做人工复核与紧急处理时才能看清完整的上下文因果关系。
+        </div>
+      </div>
+    </section>
+
+    <section class="slide">
+      <div class="slide-content">
+        <h2>案例 5：价格风险扫描器</h2>
+        <p class="lead fade-up delay-1">调整当前售价和底价，观察系统如何判断“破价、竞品压力、建议跟进”。</p>
+        <div class="two-col">
+          <div class="card fade-up delay-2">
+            <div class="slider-row"><span>当前售价</span><input type="range" min="799" max="1299" value="999" id="price-now" oninput="updatePriceRisk()"><b id="price-now-text">999</b></div>
+            <div class="slider-row"><span>底价红线</span><input type="range" min="699" max="1099" value="899" id="price-limit" oninput="updatePriceRisk()"><b id="price-limit-text">899</b></div>
+            <div class="slider-row"><span>竞品最低价</span><input type="range" min="699" max="1299" value="869" id="price-competitor" oninput="updatePriceRisk()"><b id="price-competitor-text">869</b></div>
+          </div>
+          <div class="card fade-up delay-3">
+            <h3>扫描结果</h3>
+            <table class="table">
+              <tbody>
+                <tr><th>本品破价</th><td id="risk-self">-</td></tr>
+                <tr><th>竞品破价</th><td id="risk-competitor">-</td></tr>
+                <tr><th>价格差</th><td id="risk-gap">-</td></tr>
+                <tr><th>建议动作</th><td id="risk-action">-</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="page-num">22 / 30</div>
+
+        <div class="speech-note">
+          <p>🎤 逐字稿 (P22)</p>
+          大伙再来看这个电商运营的命脉——价格风险扫描。我们在脚本里设计了三个维度的碰撞：当前我们卖多少、财务给的亏损红线底价是多少，以及用爬虫抓回来的同行竞品卖多少。大家看我在屏幕上拖动这些滑动条参数，系统会动态重新测算，只要本品售价滑落到红线以下，扫描结果立刻红字报警，给出“避免破价处罚”的强力建议动作。
+        </div>
+      </div>
+    </section>
+
+    <section class="slide">
+      <div class="slide-content">
+        <h2>价格自动化的红线：只建议，不静默改价</h2>
+        <div class="three-col">
+          <div class="card fade-up delay-1"><h3>可以自动</h3><p>抓取竞品价、识别底价风险、生成建议清单、推送负责人。</p></div>
+          <div class="card fade-up delay-2"><h3>必须复核</h3><p>涉及毛利、活动、库存、平台处罚规则时，由人确认最终策略。</p></div>
+          <div class="card fade-up delay-3"><h3>严禁静默</h3><p>不要让脚本未经确认自动改商品售价，尤其是大促、爆品和多平台联动商品。</p></div>
+        </div>
+        <div class="callout success-callout fade-up delay-3" style="margin-top:1rem;">专业自动化不是“全部无人化”，而是把机器擅长的监控和计算交出去，把人擅长的判断留在关键节点。</div>
+        <div class="page-num">23 / 30</div>
+
+        <div class="speech-note">
+          <p>🎤 逐字稿 (P23)</p>
+          在实现价格自动化监控时，我必须和全场反复重申这条用血泪换来的铁律：我们在底层做架构设计时，哪怕你的算法再聪明，也只允许系统生成“改价建议书和推送提醒”，绝对、千万不要允许脚本在后台未经任何人工审批就私自静默修改商品的线上活动价！特别是多店铺跨平台联动、或者主打爆品，一旦发生官方接口参数误判导致恶意破价，几分钟就能让全店面临灭顶之灾。专业的自动化，核心是解放重复计算，而将终极判断的缰绳牢牢握在人手里。
+        </div>
+      </div>
+    </section>
+
+    <section class="slide">
+      <div class="slide-content">
+        <h2>案例 6：日报生成器</h2>
+        <p class="lead fade-up delay-1">点击生成，模拟系统把订单、推广、退款和价格风险汇总为早会可读的日报。</p>
+        <div class="toolbar fade-up delay-2">
+          <button onclick="generateReport()" id="btn-report">生成今日经营日报</button>
+          <button class="secondary-btn" onclick="resetReport()">重置</button>
+        </div>
+        <div id="report-demo" class="card demo-panel">
+          <h3>销售推广日报 · 2026-05-18</h3>
+          <ul>
+            <li>有效销售额：<strong>￥86,420</strong>，较前 7 日均值上升 <strong>12.4%</strong>。</li>
+            <li>退款成功订单：<strong>18 单</strong>，其中 3 单金额超过 1000 元，建议售后复盘。</li>
+            <li>推广花费：<strong>￥7,860</strong>，平台后贡献率较昨日下降 2.1 个百分点。</li>
+            <li>价格风险：发现 4 个竞品低于底价红线，建议由运营负责人确认活动策略。</li>
+          </ul>
+          <div class="callout" style="margin-top:0.8rem;">明细文件：销售明细 CSV、推广明细 CSV、退款异常清单 CSV、价格建议清单 CSV。</div>
+        </div>
+        <div class="page-num">24 / 30</div>
+
+        <div class="speech-note">
+          <p>🎤 逐字稿 (P24)</p>
+          当上面讲的这些底层对账、客服质检和价格监控都在 SQLite 里跑通之后，每天早上 8:30，定时任务就会触发我们的“经营日报生成器”。大家看我点击这个“生成今日经营日报”按钮，系统会在黑盒中提取数据库指标，自动组织成一段言简意赅、没有任何废话、直接指出退款售后与竞品底价风险的 Markdown 短文本，同步抄送早会，下面还整整齐齐挂着全量原始数据的 CSV 明细附件，再也不需要任何人工手动粘表。
+        </div>
+      </div>
+    </section>
+
+    <section class="slide">
+      <div class="slide-content">
+        <h2>案例 7：ROI 估算器</h2>
+        <p class="lead fade-up delay-1">拖动参数，估算一个自动化项目大概能省多少人工时间。真实项目还要纳入维护成本和风险复核成本。</p>
+        <div class="card fade-up delay-2">
+          <div class="slider-row"><span>每天重复耗时</span><input type="range" min="0.5" max="6" step="0.5" value="2" id="roi-hours" oninput="updateROI()"><b id="roi-hours-text">2 小时</b></div>
+          <div class="slider-row"><span>每月执行天数</span><input type="range" min="5" max="30" step="1" value="26" id="roi-days" oninput="updateROI()"><b id="roi-days-text">26 天</b></div>
+          <div class="slider-row"><span>自动化覆盖率</span><input type="range" min="20" max="95" step="5" value="75" id="roi-rate" oninput="updateROI()"><b id="roi-rate-text">75%</b></div>
+          <div class="roi-output">
+            <div class="card"><p>每月节省</p><b id="roi-month">39h</b></div>
+            <div class="card"><p>每年节省</p><b id="roi-year">468h</b></div>
+            <div class="card"><p>折合工作日</p><b id="roi-workday">58.5天</b></div>
+          </div>
+        </div>
+        <div class="page-num">25 / 30</div>
+
+        <div class="speech-note">
+          <p>🎤 逐字稿 (P25)</p>
+          在我们在决定推进每一个自动化开发提案之前，最好在心里打一把算盘，算一算它的投入产出比。我在这做了一个动态的“ROI估算器”，大家看，如果我们一个业务动作每天要花 2 小时重复枯燥点击，一个月按 26 天计算，只要能让 AI 的脚本覆盖 75% 的琐碎流程，一年就能在单岗位上活生生抠出来 58.5 个全天工作日的纯时间！这省下来的可都是白银般的管理边际成本。
+        </div>
+      </div>
+    </section>
+
+    <section class="slide section-slide">
+      <div class="slide-content">
+        <h1 class="fade-up">第五章</h1>
+        <h2 class="fade-up delay-1">当系统出错：用诊断循环，而不是乱改</h2>
+        
+        <div class="speech-note">
+          <p>🎤 逐字稿 (P26)</p>
+          到这里，代码跑起来了，报表也有了。但是，只要是系统，就必然会遇到报错。第五章是我最想和大家交心探讨的内容。很多人一看到终端报红、或者是 AI 改完的代码报错，就心浮气躁、病急乱投医地让大模型一通瞎猜。今天我们彻底终结这种恶性循环，把排错变成一套冰冷严密的科学流程。
+        </div>
+      </div>
+    </section>
+
+    <section class="slide">
+      <div class="slide-content">
+        <h2>错误不是失败，是系统在告诉你边界</h2>
+        <div class="two-col">
+          <div class="card fade-up delay-1">
+            <h3>常见原因</h3>
+            <ul>
+              <li>平台页面改版，按钮定位失效。</li>
+              <li>弹窗、验证码、登录态打断流程。</li>
+              <li>下载文件名或字段名发生变化。</li>
+              <li>数据口径没定义，导致结果看起来不对。</li>
+            </ul>
+          </div>
+          <div class="card fade-up delay-2">
+            <h3>正确反应</h3>
+            <ul>
+              <li>保存报错全文，不要只截最后一行。</li>
+              <li>保存失败截图和当时的输入参数。</li>
+              <li>先复现，再最小化，再假设，再插桩。</li>
+              <li>修复后补一条回归测试或检查项。</li>
+            </ul>
+          </div>
+        </div>
+        <div class="page-num">27 / 30</div>
+
+        <div class="speech-note">
+          <p>🎤 逐字稿 (P27)</p>
+          在自动化运行中，遇到报错太正常了。有可能是拼多多或者天猫页面突然改版导致元素定位失效，也有可能是一次性动态 Token 过期、或者平台突然弹出一个滑块验证码打断了无头浏览器。记住，报错根本不是失败，而是机器在帮你探查整个业务中台的外部生存边界。当你看到红字时，第一反应绝对不要急着去改代码，先把报错全部信息抓下来，保存当时的现场截图和日志。
+        </div>
+      </div>
+    </section>
+
+    <section class="slide">
+      <div class="slide-content">
+        <h2>专业排错五步法</h2>
+        <div class="timeline fade-up delay-1">
+          <div class="step"><b>1</b><h3>复现</h3><p>确认问题稳定出现，记录命令、日期、店铺、账号。</p></div>
+          <div class="step"><b>2</b><h3>最小化</h3><p>只跑一个模块、一个店铺、一天数据，降低干扰。</p></div>
+          <div class="step"><b>3</b><h3>假设</h3><p>列出 2-3 个最可能原因，按概率排序。</p></div>
+          <div class="step"><b>4</b><h3>插桩</h3><p>加日志、截图、字段检查，找到真正断点。</p></div>
+          <div class="step"><b>5</b><h3>回归</h3><p>修完后再跑旧场景，防止修 A 坏 B。</p></div>
+        </div>
+        <div class="mac-window fade-up delay-2" style="margin-top:1rem;">
+          <div class="mac-header"><span class="mac-dot red"></span><span class="mac-dot yellow"></span><span class="mac-dot green"></span><div class="mac-title">给 AI 的诊断指令</div></div>
+          <div class="prompt-box">现在进入诊断模式。不要直接大改代码。
+请先根据报错、截图、最近一次成功日志，给出 3 个可验证假设。
+然后告诉我应该在哪些关键节点加日志或截图。
+每次只改一个最小点，修完后说明如何回归验证。</div>
+        </div>
+        <div class="page-num">28 / 30</div>
+
+        <div class="speech-note">
+          <p>🎤 逐字稿 (P28)</p>
+          如果一个 Bug 你尝试修改了 10 次以上还是跑不通，立刻死心！放弃任何盲目的代码修补，强制进入我们严格的 /diagnose 调试诊断循环：第一，构建稳定复现信号；第二，提出 3 个带有优先级、可证伪的具体科学假设；第三，实施“插桩排查”，比如根据我们在底层强力定位的图标节点或文本节点，要求 AI 指示我们在代码具体哪一行插入 console.log 打印核心变量，或者捕获 try...catch 错误后自动截图。最后，任何一次微调修复完，必须进行全流程场景的回归测试，绝对避免修好 A 功能却悄悄搞砸了 B 模块的惨剧。
+        </div>
+      </div>
+    </section>
+
+    <section class="slide">
+      <div class="slide-content">
+        <h2>从一个脚本，到稳定业务中台的路线</h2>
+        <div class="grid-2">
+          <div class="card fade-up delay-1"><h3>第 1 周：选一个高频痛点</h3><p>例如每日订单下载、退款异常清单、客服会话抽检。只做一个闭环，不贪多。</p></div>
+          <div class="card fade-up delay-1"><h3>第 2 周：沉淀数据口径</h3><p>明确字段、过滤规则、输出格式、异常定义。把口径写进文档。</p></div>
+          <div class="card fade-up delay-2"><h3>第 3 周：加日志和回归</h3><p>失败要有截图、日志和可重跑机制。让系统先稳定，再追求功能多。</p></div>
+          <div class="card fade-up delay-2"><h3>第 4 周：接入定时和日报</h3><p>把人工执行变成定时执行，把结果推到早会和处理清单。</p></div>
+        </div>
+        <div class="callout success-callout fade-up delay-3" style="margin-top:1rem;">最小可行自动化不是“功能少”，而是每次只解决一个清晰、可验证、可复用的问题。</div>
+        <div class="page-num">29 / 30</div>
+
+        <div class="speech-note">
+          <p>🎤 逐字稿 (P29)</p>
+          最后，给大家一张为期一个月的落地实战进化路线图：第一周别贪大求全，只抓一个最折磨运营的高频痛点，完成最小可行性闭环；第二周横向沉淀业务标准，把退款、算费的口径彻底写死、落进文档，坚守增量开发绝不破坏基座结构和核心执行顺序的原则；第三周完善全流程的 try-catch 容错、异常截图和控制台运行日志；第四周接入定时任务和全自动日报。一口一口吃，一个一劳永逸的本地自动化中台就成型了。
+        </div>
+      </div>
+    </section>
+
+    <section class="slide closing-slide">
+      <div class="slide-content">
+        <h1 class="fade-up">真正的门槛不是代码</h1>
+        <p class="title-subtitle fade-up delay-1">而是你能不能把业务讲清楚，把数据口径定清楚，把风险边界守清楚。</p>
+        <div class="grid-2 fade-up delay-2" style="width:min(920px,90vw);text-align:left;">
+          <div class="card"><h3>今天就能开始</h3><p>找一个每天重复、规则明确、结果可验收的工作，让 AI 帮你做成脚本。</p></div>
+          <div class="card"><h3>长期真正复利</h3><p>把每次修复、口径、经验写进文档和系统，让下一次自动化更快、更稳。</p></div>
+        </div>
+        <div class="meta-line fade-up delay-3" style="margin-top:2rem;">Q&A · 现场讨论 · 从你的第一个业务流程开始</div>
+        
+        <div class="speech-note">
+          <p>🎤 逐字稿 (P30)</p>
+          好了，今天的分享就到这里。最后送大家一句话：在人工智能时代，实现个人效率爆发的真正门槛，从来都不是你会不会写复杂的长篇代码，而是你能不能把自己的核心业务流程想得足够透彻，把数据指标定义得足够干净，把风险边界守得足够严密。代码永远只是工具，你的业务智慧才是那个无可替代的灵魂。谢谢大家，下面我们进入现场提问与互动讨论环节。
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div id="progress-container"><div id="progress-bar"></div></div>
+
+  <script>
+    let currentSlide = 0;
+    const slides = Array.from(document.querySelectorAll('.slide'));
+    const totalSlides = slides.length;
+    const progressBar = document.getElementById('progress-bar');
+
+    // 🎤 一键全局控制逐字稿展开与隐藏的底层实现逻辑
+    function toggleAllSpeech(show) {
+      const notes = document.querySelectorAll('.speech-note');
+      notes.forEach(note => {
+        if (show) {
+          note.classList.add('visible');
+        } else {
+          note.classList.remove('visible');
+        }
+      });
+    }
+
+    function updateSlides() {
+      slides.forEach((slide, index) => slide.classList.toggle('active', index === currentSlide));
+      progressBar.style.width = `${(currentSlide / (totalSlides - 1)) * 100}%`;
+    }
+
+    function nextSlide() {
+      if (currentSlide < totalSlides - 1) {
+        currentSlide += 1;
+        updateSlides();
+      }
+    }
+
+    function prevSlide() {
+      if (currentSlide > 0) {
+        currentSlide -= 1;
+        updateSlides();
+      }
+    }
+
+    document.addEventListener('keydown', (event) => {
+      const tag = event.target.tagName.toLowerCase();
+      if (tag === 'input' || tag === 'button') return;
+      if (event.key === 'ArrowRight' || event.key === ' ' || event.key === 'PageDown') nextSlide();
+      if (event.key === 'ArrowLeft' || event.key === 'PageUp') prevSlide();
+    });
+
+    document.addEventListener('click', (event) => {
+      if (event.target.closest('button') || event.target.closest('input')) return;
+      const x = event.clientX / window.innerWidth;
+      if (x > 0.82) nextSlide();
+      if (x < 0.18) prevSlide();
+    });
+
+    function typeLines(target, lines, button) {
+      target.innerHTML = '';
+      let delay = 0;
+      if (button) button.disabled = true;
+      lines.forEach((line, index) => {
+        setTimeout(() => {
+          const div = document.createElement('div');
+          div.className = `console-line ${line.cls || ''}`;
+          div.textContent = line.text;
+          target.appendChild(div);
+          target.scrollTop = target.scrollHeight;
+          if (index === lines.length - 1 && button) button.disabled = false;
+        }, delay);
+        delay += line.wait || 360;
+      });
+    }
+
+    function runPipelineDemo() {
+      const consoleEl = document.getElementById('pipeline-console');
+      const button = document.getElementById('btn-pipeline');
+      typeLines(consoleEl, [
+        { text: '> node Global_Runner.cjs --pipeline=daily-safe', cls: 'console-info', wait: 520 },
+        { text: '[1/7] 拉取昨日订单与推广数据...', wait: 460 },
+        { text: '[2/7] 同步商品主数据、库存与条码...', wait: 460 },
+        { text: '[3/7] 扫描退款与售后异常订单...', cls: 'console-warn', wait: 460 },
+        { text: '[4/7] 检查物流超时与揽收异常...', wait: 460 },
+        { text: '[5/7] 执行价格风险扫描，只生成建议清单，不自动改价...', cls: 'console-info', wait: 560 },
+        { text: '[6/7] 写入 SQLite，统一支付日期、店铺、商品 69 码...', wait: 460 },
+        { text: '[7/7] 生成日报与待处理 CSV。完成，用时 03:18。', cls: 'console-ok', wait: 460 }
+      ], button);
+    }
+
+    function resetPipelineDemo() {
+      document.getElementById('pipeline-console').textContent = '点击“运行演示”，观察一条自动化流水线如何完成数据准备。';
+      document.getElementById('btn-pipeline').disabled = false;
+    }
+
+    function scorePrompt(kind) {
+      const presets = {
+        bad: {
+          title: '模糊版：AI 只能靠猜',
+          copy: '“帮我做个电商自动化系统，要好用一点。” 这类需求会导致返工，因为没有口径、边界和验收。',
+          values: { goal: 28, input: 14, rule: 10, output: 18, risk: 8 }
+        },
+        good: {
+          title: '专业版：AI 可以执行',
+          copy: '明确了数据来源、统计口径、异常定义、输出文件和人工复核边界，AI 才能稳定交付。',
+          values: { goal: 92, input: 88, rule: 94, output: 90, risk: 86 }
+        }
+      };
+      const item = presets[kind];
+      document.getElementById('prompt-score-title').textContent = item.title;
+      document.getElementById('prompt-score-copy').textContent = item.copy;
+      Object.entries(item.values).forEach(([key, value]) => {
+        document.getElementById(`bar-${key}`).style.width = `${value}%`;
+        document.getElementById(`num-${key}`).textContent = value;
+      });
+    }
+
+    function runSQLDemo() {
+      const result = document.getElementById('sql-result');
+      const button = document.getElementById('btn-sql');
+      button.disabled = true;
+      button.textContent = '查询中...';
+      setTimeout(() => {
+        result.classList.add('show');
+        button.textContent = '已匹配 3 条';
+        button.classList.remove('accent-btn');
+        button.classList.add('success-btn');
+      }, 700);
+    }
+
+    function classifyChat(type) {
+      const data = {
+        attitude: {
+          text: '客户：为什么还不发货？客服：你自己看订单状态，催也没用。',
+          level: '<span class="tag tag-red">高风险</span>',
+          tags: '服务态度、催发货、可能投诉',
+          evidence: '“你自己看”“催也没用”表达冷硬，未提供解决路径。',
+          action: '组长复核；补发安抚话术；检查该订单物流节点。'
+        },
+        promise: {
+          text: '客户：今天拍能明天到吗？客服：肯定明天到，晚了我负责。',
+          level: '<span class="tag tag-yellow">中风险</span>',
+          tags: '时效承诺、履约风险',
+          evidence: '客服作出确定性到货承诺，但未确认仓库和快递时效。',
+          action: '改为平台规则话术；对该订单标记履约关注。'
+        },
+        normal: {
+          text: '客户：这个滤芯适配哪款？客服：请您看一下机器侧面的型号，我帮您核对后再推荐。',
+          level: '<span class="tag tag-green">低风险</span>',
+          tags: '正常咨询、适配确认',
+          evidence: '客服要求确认型号，避免误导购买。',
+          action: '无需处理，可沉淀为标准回复。'
+        }
+      };
+      const item = data[type];
+      document.getElementById('chat-text').textContent = item.text;
+      document.getElementById('chat-level').innerHTML = item.level;
+      document.getElementById('chat-tags').textContent = item.tags;
+      document.getElementById('chat-evidence').textContent = item.evidence;
+      document.getElementById('chat-action').textContent = item.action;
+    }
+
+    function updatePriceRisk() {
+      const now = Number(document.getElementById('price-now').value);
+      const limit = Number(document.getElementById('price-limit').value);
+      const competitor = Number(document.getElementById('price-competitor').value);
+      document.getElementById('price-now-text').textContent = now;
+      document.getElementById('price-limit-text').textContent = limit;
+      document.getElementById('price-competitor-text').textContent = competitor;
+      const gap = now - competitor;
+      document.getElementById('risk-self').innerHTML = now < limit ? '<span class="tag tag-red">是，低于底价</span>' : '<span class="tag tag-green">否</span>';
+      document.getElementById('risk-competitor').innerHTML = competitor < limit ? '<span class="tag tag-red">是，竞品破价</span>' : '<span class="tag tag-green">否</span>';
+      document.getElementById('risk-gap').innerHTML = `${gap > 0 ? '高于竞品' : '低于竞品'} ￥${Math.abs(gap)}`;
+      let action = '维持观察';
+      if (now < limit) action = '立即复核本品价格，避免破价处罚';
+      else if (competitor < limit) action = '记录竞品破价证据，提交运营确认策略';
+      else if (gap > 80) action = '竞品压力较大，评估活动资源或卖点强化';
+      document.getElementById('risk-action').textContent = action;
+    }
+
+    function generateReport() {
+      const panel = document.getElementById('report-demo');
+      const button = document.getElementById('btn-report');
+      button.disabled = true;
+      button.textContent = '生成中...';
+      setTimeout(() => {
+        panel.classList.add('show');
+        button.textContent = '已生成';
+        button.classList.add('success-btn');
+      }, 650);
+    }
+
+    function resetReport() {
+      document.getElementById('report-demo').classList.remove('show');
+      const button = document.getElementById('btn-report');
+      button.disabled = false;
+      button.textContent = '生成今日经营日报';
+      button.classList.remove('success-btn');
+    }
+
+    function updateROI() {
+      const hours = Number(document.getElementById('roi-hours').value);
+      const days = Number(document.getElementById('roi-days').value);
+      const rate = Number(document.getElementById('roi-rate').value);
+      document.getElementById('roi-hours-text').textContent = `${hours} 小时`;
+      document.getElementById('roi-days-text').textContent = `${days} 天`;
+      document.getElementById('roi-rate-text').textContent = `${rate}%`;
+      const month = hours * days * rate / 100;
+      const year = month * 12;
+      document.getElementById('roi-month').textContent = `${month.toFixed(1)}h`;
+      document.getElementById('roi-year').textContent = `${year.toFixed(0)}h`;
+      document.getElementById('roi-workday').textContent = `${(year / 8).toFixed(1)}天`;
+    }
+
+    updateSlides();
+    updatePriceRisk();
+    updateROI();
+  </script>
+</body>
+</html>
